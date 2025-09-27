@@ -22,7 +22,7 @@ class Denetim(db.Model):
 DATA_FILE = os.path.join(app.root_path, "data.json")
 categories = load_data()
 
-@app.before_first_request
+@app.before_request
 def create_tables():
     db.create_all()
 

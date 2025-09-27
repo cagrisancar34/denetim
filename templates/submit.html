@@ -86,10 +86,10 @@
 <script>
 document.getElementById('pdfExportBtn').addEventListener('click', function () {
     const pdf = new window.jspdf.jsPDF('p', 'mm', 'a4');
-    // Tek bir div: özet, skorlar ve hemen ardından sorular/yanıtlar
-    const allElement = document.createElement('div');
-    allElement.style.padding = '16px';
-    allElement.innerHTML = `
+    // İlk sayfa: özet, skorlar ve puan kaybedilen sorular
+    const firstPageElement = document.createElement('div');
+    firstPageElement.style.padding = '16px';
+    firstPageElement.innerHTML = `
         <div class='mb-3'>
             <strong>Tesis Adı:</strong> {{ form_data.get('tesis_adi', '-') }}<br>
             <strong>Denetim Tarihi:</strong> 2025-09-26<br>
@@ -136,48 +136,63 @@ document.getElementById('pdfExportBtn').addEventListener('click', function () {
                 {% endfor %}
             </tbody>
         </table>
-        <h5 class='mt-4 mb-2 text-secondary'>Tüm Kategoriler ve Yanıtlar</h5>
-        <div>
-            {% for category in categories.keys() %}
-            {% set questions = categories[category] %}
-            <div class='mb-2'>
-                <strong class='text-dark'>{{ category }}</strong>
-                <ul class='list-group mb-2'>
-                {% for question in questions %}
-                    <li class='list-group-item'>
-                        <strong>{{ question }}</strong><br>
-                        Yanıt: {% if form_data.get(question) %}{{ form_data[question] }}{% else %}-{% endif %}
-                    </li>
-                {% endfor %}
-                </ul>
-            </div>
-            {% endfor %}
-        </div>
     `;
-    document.body.appendChild(allElement);
-    html2canvas(allElement).then(function(canvas) {
+    document.body.appendChild(firstPageElement);
+    html2canvas(firstPageElement).then(function(canvas) {
         const imgData = canvas.toDataURL('image/png');
         const pageWidth = pdf.internal.pageSize.getWidth();
         const pageHeight = pdf.internal.pageSize.getHeight();
         const imgProps = pdf.getImageProperties(imgData);
         const pdfWidth = pageWidth;
         const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-        let position = 0;
-        if (pdfHeight < pageHeight) {
-            pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
-        } else {
-            let remainingHeight = pdfHeight;
-            while (remainingHeight > 0) {
-                pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, pdfHeight);
-                remainingHeight -= pageHeight;
-                if (remainingHeight > 0) {
-                    pdf.addPage();
-                    position = 0;
+        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
+        document.body.removeChild(firstPageElement);
+        // Sonraki sayfa: tüm sorular ve yanıtlar
+        pdf.addPage();
+        const allQuestionsElement = document.createElement('div');
+        allQuestionsElement.style.padding = '16px';
+        allQuestionsElement.innerHTML = `
+            <h5 class='mt-4 mb-2 text-secondary'>Tüm Kategoriler ve Yanıtlar</h5>
+            <div>
+                {% for category in categories.keys() %}
+                {% set questions = categories[category] %}
+                <div class='mb-2'>
+                    <strong class='text-dark'>{{ category }}</strong>
+                    <ul class='list-group mb-2'>
+                    {% for question in questions %}
+                        <li class='list-group-item'>
+                            <strong>{{ question }}</strong><br>
+                            Yanıt: {% if form_data.get(question) %}{{ form_data[question] }}{% else %}-{% endif %}
+                        </li>
+                    {% endfor %}
+                    </ul>
+                </div>
+                {% endfor %}
+            </div>
+        `;
+        document.body.appendChild(allQuestionsElement);
+        html2canvas(allQuestionsElement).then(function(canvas2) {
+            const imgData2 = canvas2.toDataURL('image/png');
+            const imgProps2 = pdf.getImageProperties(imgData2);
+            const pdfWidth2 = pageWidth;
+            const pdfHeight2 = (imgProps2.height * pdfWidth2) / imgProps2.width;
+            let position = 0;
+            if (pdfHeight2 < pageHeight) {
+                pdf.addImage(imgData2, 'PNG', 0, position, pdfWidth2, pdfHeight2);
+            } else {
+                let remainingHeight = pdfHeight2;
+                while (remainingHeight > 0) {
+                    pdf.addImage(imgData2, 'PNG', 0, position, pdfWidth2, pdfHeight2);
+                    remainingHeight -= pageHeight;
+                    if (remainingHeight > 0) {
+                        pdf.addPage();
+                        position = 0;
+                    }
                 }
             }
-        }
-        document.body.removeChild(allElement);
-        pdf.save('denetim_sonuclari.pdf');
+            document.body.removeChild(allQuestionsElement);
+            pdf.save('denetim_sonuclari.pdf');
+        });
     });
 });
 </script>

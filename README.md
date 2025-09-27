@@ -49,15 +49,39 @@ Bu proje, Spor İstanbul tesislerinde yapılan denetimlerin dijital olarak kayde
 
 ## Kurulum
 
-1. Gerekli paketleri yükleyin:
-   ```bash
+1. Python 3.10+ kurulu olmalı.
+2. Gerekli paketleri yükleyin:
+   ```zsh
    pip install -r requirements.txt
    ```
-2. Uygulamayı başlatın:
-   ```bash
+3. Uygulamayı başlatın:
+   ```zsh
    python app.py
    ```
-3. Tarayıcıdan `http://127.0.0.1:5000` adresine giderek uygulamayı kullanabilirsiniz.
+
+## Canlıya Alma (Render)
+
+1. Projeyi GitHub'a push edin:
+   ```zsh
+   git remote add origin https://github.com/cagrisanca34/denetim.git
+   git branch -M main
+   git push -u origin main
+   ```
+2. https://dashboard.render.com/ adresine gidin, ücretsiz hesap açın.
+3. "New Web Service" ile GitHub reposunu bağlayın.
+4. Python ortamı için `requirements.txt` dosyasını kullanacak.
+5. "Start Command" olarak şunu girin:
+   ```zsh
+   gunicorn app:app
+   ```
+6. Deploy edin ve çıkan URL üzerinden uygulamanızı canlı olarak kullanın.
+
+## Ortam Değişkenleri
+Gerekirse gizli anahtarlarınızı Render panelinden ekleyebilirsiniz.
+
+## Ekstra
+- Tüm tesisler seçiliyse, skorlar ve kaybedilen sorular tüm tesislerin toplamına göre hesaplanır.
+- Sorun yaşarsanız, `app.py` ve `requirements.txt` dosyalarını kontrol edin.
 
 ## Geliştirme
 - Kod modüler hale getirilmiştir: Veri işlemleri `data_utils.py`, skor hesaplama ve analiz fonksiyonları `score_utils.py` dosyalarına taşınmıştır.

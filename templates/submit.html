@@ -147,8 +147,7 @@ document.getElementById('pdfExportBtn').addEventListener('click', function () {
         const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
         pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
         document.body.removeChild(firstPageElement);
-        // Sonraki sayfa: tüm sorular ve yanıtlar
-        pdf.addPage();
+        // Sonraki sayfalar: tüm kategorilerdeki sorular ve yanıtlar
         const allQuestionsElement = document.createElement('div');
         allQuestionsElement.style.padding = '16px';
         allQuestionsElement.innerHTML = `
@@ -177,13 +176,16 @@ document.getElementById('pdfExportBtn').addEventListener('click', function () {
             const pdfWidth2 = pageWidth;
             const pdfHeight2 = (imgProps2.height * pdfWidth2) / imgProps2.width;
             let position = 0;
+            // Sayfa sığmazsa bölerek ekle
             if (pdfHeight2 < pageHeight) {
                 pdf.addImage(imgData2, 'PNG', 0, position, pdfWidth2, pdfHeight2);
             } else {
                 let remainingHeight = pdfHeight2;
+                let offset = 0;
                 while (remainingHeight > 0) {
-                    pdf.addImage(imgData2, 'PNG', 0, position, pdfWidth2, pdfHeight2);
+                    pdf.addImage(imgData2, 'PNG', 0, position, pdfWidth2, pageHeight, undefined, 'FAST');
                     remainingHeight -= pageHeight;
+                    offset += pageHeight;
                     if (remainingHeight > 0) {
                         pdf.addPage();
                         position = 0;

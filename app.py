@@ -3,13 +3,31 @@ import os
 import json
 from data_utils import load_data, save_data, save_denetim
 from score_utils import calculate_score, get_failed_questions, get_category_scores, extract_answers
+from flask_sqlalchemy import SQLAlchemy
+from datetime import datetime
 
 app = Flask(__name__)
+
+app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///denetimler.db'
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+db = SQLAlchemy(app)
+
+class Denetim(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    tesis_adi = db.Column(db.String(128))
+    tarih = db.Column(db.String(32))
+    denetim_yapan = db.Column(db.String(128))
+    cevaplar = db.Column(db.Text)  # JSON string olarak saklanacak
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
 
 DATA_FILE = os.path.join(app.root_path, "data.json")
 DENETIM_FILE = os.path.join(app.root_path, "denetimler.json")
 
 categories = load_data()
+
+@app.before_first_request
+def create_tables():
+    db.create_all()
 
 @app.route("/")
 def index():
@@ -54,7 +72,15 @@ def submit():
     score, total = calculate_score(answers, categories)
     failed_questions = get_failed_questions(answers, categories)
     category_scores = get_category_scores(answers, categories)
-    save_denetim(answers)
+    # JSON yerine veritabanına kaydet
+    denetim = Denetim(
+        tesis_adi=form_data.get("tesis_adi", ""),
+        tarih=form_data.get("tarih", ""),
+        denetim_yapan=form_data.get("denetim_yapan", ""),
+        cevaplar=json.dumps(answers)
+    )
+    db.session.add(denetim)
+    db.session.commit()
     return render_template("submit.html", form_data=answers, categories=categories, score=score, total=total, failed_questions=failed_questions, category_scores=category_scores)
 
 @app.route("/kategori")
@@ -80,25 +106,27 @@ def tesis_karnesi():
 
 @app.route("/get_last_denetim")
 def get_last_denetim():
-    if os.path.exists(DENETIM_FILE):
-        with open(DENETIM_FILE, "r", encoding="utf-8") as f:
-            all_data = json.load(f)
-        if all_data:
-            last = all_data[-1]
-        else:
-            last = {}
+    d = Denetim.query.order_by(Denetim.created_at.desc()).first()
+    if d:
+        cevaplar = json.loads(d.cevaplar)
+        cevaplar["tesis_adi"] = d.tesis_adi
+        cevaplar["tarih"] = d.tarih
+        cevaplar["denetim_yapan"] = d.denetim_yapan
+        return jsonify({"form_data": cevaplar, "categories": categories})
     else:
-        last = {}
-    return jsonify({"form_data": last, "categories": categories})
+        return jsonify({"form_data": {}, "categories": categories})
 
 @app.route("/get_all_denetimler")
 def get_all_denetimler():
-    if os.path.exists(DENETIM_FILE):
-        with open(DENETIM_FILE, "r", encoding="utf-8") as f:
-            all_data = json.load(f)
-    else:
-        all_data = []
-    return jsonify({"denetimler": all_data, "categories": categories})
+    denetimler = Denetim.query.order_by(Denetim.created_at).all()
+    result = []
+    for d in denetimler:
+        cevaplar = json.loads(d.cevaplar)
+        cevaplar["tesis_adi"] = d.tesis_adi
+        cevaplar["tarih"] = d.tarih
+        cevaplar["denetim_yapan"] = d.denetim_yapan
+        result.append(cevaplar)
+    return jsonify({"denetimler": result, "categories": categories})
 
 # Yeni endpoint: Tesis Karnesi için JSON veri
 @app.route("/tesis_karnesi_data")

@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tesis Karnesi</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { background: #f8f9fa; }
+        .score-table th, .score-table td { vertical-align: middle; text-align: center; }
+        .score-table th { background: #e9ecef; }
+        .score-table { margin-bottom: 2rem; }
+        .score-badge { font-size: 2.2rem; font-weight: bold; color: #fff; background: #4f46e5; border-radius: 1rem; padding: 0.7rem 2rem; }
+        .chart-container { max-width: 400px; margin: 0 auto 2rem auto; }
+    </style>
+</head>
+<body>
+<div class="container py-4">
+    <h1 class="mb-4 text-primary">Tesis Karnesi</h1>
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <label for="tesisFilter" class="form-label">Tesis Seçiniz:</label>
+            <select id="tesisFilter" class="form-select mb-2" aria-label="Tesis seçimi"></select>
+        </div>
+    </div>
+    <div id="karnesiContent"></div>
+</div>
+<script>
+let allDenetimler = [];
+let categories = {};
+let scoreChartInstance = null;
+function renderKarnesi(form_data) {
+    let totalYes = 0;
+    let totalMax = 0;
+    let categoryScores = [];
+    let lostQuestions = [];
+    Object.keys(categories).forEach((cat) => {
+        const questions = categories[cat];
+        let catYes = 0;
+        let catMax = 0;
+        questions.forEach((q) => {
+            const ans = form_data[q];
+            if (ans === 'Evet') {
+                catYes++;
+                catMax++;
+            } else if (ans === 'Hayır') {
+                catMax++;
+                lostQuestions.push([q, cat]);
+            }
+        });
+        totalYes += catYes;
+        totalMax += catMax;
+        const percent = catMax > 0 ? Math.round((catYes / catMax) * 100) : 0;
+        categoryScores.push({category: cat, yes: catYes, max: catMax, percent});
+    });
+    const overallPercent = totalMax > 0 ? Math.round((totalYes / totalMax) * 100) : 0;
+    let html = `<div class='mb-3'><span class='score-badge' id='totalScoreBadge'>Skor: ${totalYes} / ${totalMax}</span></div>`;
+    html += `<div class='mb-3'><strong>Başarı Oranı:</strong> <span id='overallSuccessRate'>%${overallPercent}</span></div>`;
+    html += `<h4 class='mb-3'>Kategori Bazlı Skorlar</h4><table class='table table-bordered score-table'><thead><tr><th>Kategori</th><th>Alınan Skor</th><th>Maksimum Skor</th><th>Başarı Oranı (%)</th></tr></thead><tbody id='scoreTableBody'></tbody></table>`;
+    html += `<h4 class='mb-3'>Puan Kaybedilen Sorular</h4><table class='table table-bordered'><thead><tr><th>Soru</th><th>Kategori</th></tr></thead><tbody id='lostPointsTable'></tbody></table>`;
+    document.getElementById('karnesiContent').innerHTML = html;
+    // Tablo
+    const tbody = document.getElementById('scoreTableBody');
+    categoryScores.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${row.category}</td><td>${row.yes}</td><td>${row.max}</td><td>${row.percent}</td>`;
+        tbody.appendChild(tr);
+    });
+    // Puan kaybedilen sorular tabloya ekle
+    const lostTable = document.getElementById('lostPointsTable');
+    if (lostQuestions.length === 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td colspan='2' class='text-success'>Tüm sorulardan puan alındı!</td>`;
+        lostTable.appendChild(tr);
+    } else {
+        lostQuestions.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${item[0]}</td><td>${item[1]}</td>`;
+            lostTable.appendChild(tr);
+        });
+    }
+}
+function renderKarnesiForAll(denetimler) {
+    // Tüm denetimlerin skorlarını ve kaybedilen soruları topluca hesapla
+    let totalYes = 0;
+    let totalMax = 0;
+    let categoryScores = [];
+    let lostQuestions = [];
+    // Kategori bazında toplama için
+    const catYesMap = {};
+    const catMaxMap = {};
+    Object.keys(categories).forEach(cat => {
+        catYesMap[cat] = 0;
+        catMaxMap[cat] = 0;
+    });
+    denetimler.forEach(form_data => {
+        Object.keys(categories).forEach(cat => {
+            const questions = categories[cat];
+            questions.forEach(q => {
+                const ans = form_data[q];
+                if (ans === 'Evet') {
+                    catYesMap[cat]++;
+                    catMaxMap[cat]++;
+                } else if (ans === 'Hayır') {
+                    catMaxMap[cat]++;
+                    lostQuestions.push([q, cat]);
+                }
+            });
+        });
+    });
+    Object.keys(categories).forEach(cat => {
+        totalYes += catYesMap[cat];
+        totalMax += catMaxMap[cat];
+        const percent = catMaxMap[cat] > 0 ? Math.round((catYesMap[cat] / catMaxMap[cat]) * 100) : 0;
+        categoryScores.push({category: cat, yes: catYesMap[cat], max: catMaxMap[cat], percent});
+    });
+    const overallPercent = totalMax > 0 ? Math.round((totalYes / totalMax) * 100) : 0;
+    let html = `<div class='mb-3'><span class='score-badge' id='totalScoreBadge'>Skor: ${totalYes} / ${totalMax}</span></div>`;
+    html += `<div class='mb-3'><strong>Başarı Oranı:</strong> <span id='overallSuccessRate'>%${overallPercent}</span></div>`;
+    html += `<h4 class='mb-3'>Kategori Bazlı Skorlar</h4><table class='table table-bordered score-table'><thead><tr><th>Kategori</th><th>Alınan Skor</th><th>Maksimum Skor</th><th>Başarı Oranı (%)</th></tr></thead><tbody id='scoreTableBody'></tbody></table>`;
+    html += `<h4 class='mb-3'>Puan Kaybedilen Sorular</h4><table class='table table-bordered'><thead><tr><th>Soru</th><th>Kategori</th></tr></thead><tbody id='lostPointsTable'></tbody></table>`;
+    document.getElementById('karnesiContent').innerHTML = html;
+    // Tablo
+    const tbody = document.getElementById('scoreTableBody');
+    categoryScores.forEach(row => {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>${row.category}</td><td>${row.yes}</td><td>${row.max}</td><td>${row.percent}</td>`;
+        tbody.appendChild(tr);
+    });
+    // Puan kaybedilen sorular tabloya ekle
+    const lostTable = document.getElementById('lostPointsTable');
+    if (lostQuestions.length === 0) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td colspan='2' class='text-success'>Tüm sorulardan puan alındı!</td>`;
+        lostTable.appendChild(tr);
+    } else {
+        lostQuestions.forEach(item => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td>${item[0]}</td><td>${item[1]}</td>`;
+            lostTable.appendChild(tr);
+        });
+    }
+}
+fetch('/get_all_denetimler')
+    .then(res => res.json())
+    .then(data => {
+        allDenetimler = data.denetimler;
+        categories = data.categories;
+        // Dropdown'a tesis adlarını ekle
+        const tesisSet = new Set();
+        allDenetimler.forEach(d => {
+            if (d.tesis_adi) tesisSet.add(d.tesis_adi);
+        });
+        const select = document.getElementById('tesisFilter');
+        select.innerHTML = '<option value="">Tüm Tesisler</option>';
+        tesisSet.forEach(tesis => {
+            const option = document.createElement('option');
+            option.value = tesis;
+            option.textContent = tesis;
+            select.appendChild(option);
+        });
+        select.onchange = filterKarnesi;
+        // Varsayılan olarak son denetimi göster
+        if (allDenetimler.length > 0) {
+            renderKarnesi(allDenetimler[allDenetimler.length-1]);
+        }
+    });
+function filterKarnesi() {
+    const select = document.getElementById('tesisFilter');
+    const filterValue = select.value;
+    if (!filterValue) {
+        if (allDenetimler.length > 0) {
+            // Tüm tesisler için toplu skor göster
+            renderKarnesiForAll(allDenetimler);
+        }
+        return;
+    }
+    const filtered = allDenetimler.filter(d => d.tesis_adi && d.tesis_adi.toString() === filterValue.toString());
+    if (filtered.length > 0) {
+        renderKarnesi(filtered[filtered.length-1]);
+    } else {
+        document.getElementById('karnesiContent').innerHTML = '<div class="alert alert-warning">Seçilen tesise ait denetim bulunamadı.</div>';
+    }
+}
+</script>
+</body>
+</html>

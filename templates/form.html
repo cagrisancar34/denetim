@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Denetim Formu</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background: #f8f9fa; }
+        .accordion-button { font-size: 1.1rem; font-weight: bold; }
+        .accordion-item { margin-bottom: 1rem; }
+        .form-section { margin-bottom: 2rem; }
+        .form-check-input[type="radio"] {
+            width: 1.3em;
+            height: 1.3em;
+            margin-right: 0.5em;
+        }
+        .form-check-label {
+            font-size: 1.08em;
+            margin-right: 1.5em;
+        }
+        .accordion-item .accordion-body {
+            background: #f6f8fc;
+        }
+        .aciklama-box {
+            margin-top: 8px;
+        }
+    </style>
+</head>
+<body>
+<div class="container py-4">
+    <h1 class="mb-4 text-primary">Tesis Standartları Denetim Formu</h1>
+    <form method="POST" action="/submit">
+        <div class="form-section row mb-3">
+            <div class="col-md-4 mb-2">
+                <label class="form-label" for="tesis_adi">Tesis Adı</label>
+                <input type="text" class="form-control" name="tesis_adi" id="tesis_adi" required aria-required="true">
+            </div>
+            <div class="col-md-4 mb-2">
+                <label class="form-label" for="denetim_tarihi">Denetim Tarihi</label>
+                <input type="date" class="form-control" name="denetim_tarihi" id="denetim_tarihi" required aria-required="true">
+            </div>
+            <div class="col-md-4 mb-2">
+                <label class="form-label" for="denetim_yapan">Denetim Yapan Kişi</label>
+                <input type="text" class="form-control" name="denetim_yapan" id="denetim_yapan" required aria-required="true">
+            </div>
+        </div>
+        <div class="accordion" id="denetimAccordion">
+            {% for category, questions in categories.items() %}
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="heading{{ loop.index }}">
+                    <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#collapse{{ loop.index }}" aria-expanded="false" aria-controls="collapse{{ loop.index }}">
+                        <span class="text-dark">{{ category }}</span>
+                    </button>
+                </h2>
+                <div id="collapse{{ loop.index }}" class="accordion-collapse collapse" aria-labelledby="heading{{ loop.index }}" data-bs-parent="#denetimAccordion">
+                    <div class="accordion-body">
+                        {% for question in questions %}
+                        <div class="mb-4 p-3 rounded border bg-white shadow-sm d-flex flex-column flex-md-row align-items-md-center justify-content-between">
+                            <div class="fw-semibold mb-2 mb-md-0" style="flex:1; min-width:220px;">{{ question }}</div>
+                            <div class="d-flex gap-3 align-items-center mb-2 mb-md-0" style="flex:1;">
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="{{ question }}" id="evet_{{ loop.index }}_{{ loop.index0 }}" value="Evet" required aria-required="true">
+                                    <label class="form-check-label" for="evet_{{ loop.index }}_{{ loop.index0 }}">Evet</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="{{ question }}" id="hayir_{{ loop.index }}_{{ loop.index0 }}" value="Hayır">
+                                    <label class="form-check-label" for="hayir_{{ loop.index }}_{{ loop.index0 }}">Hayır</label>
+                                </div>
+                                <div class="form-check form-check-inline">
+                                    <input class="form-check-input" type="radio" name="{{ question }}" id="yok_{{ loop.index }}_{{ loop.index0 }}" value="Yok">
+                                    <label class="form-check-label" for="yok_{{ loop.index }}_{{ loop.index0 }}">Yok</label>
+                                </div>
+                            </div>
+                            <div style="flex:2; min-width:220px;">
+                                <input type="text" class="form-control ms-md-3 mt-2 mt-md-0" name="aciklama_{{ question }}" placeholder="Açıklama (isteğe bağlı)" aria-label="Açıklama">
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        <button type="submit" class="btn btn-success mt-4">Formu Gönder</button>
+    </form>
+    <a href="/kategori" class="btn btn-outline-primary mt-3">Kategori ve Soru Ekle</a>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

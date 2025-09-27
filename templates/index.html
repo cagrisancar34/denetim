@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Spor İstanbul Bölge Şefi Denetim</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-primary">
+        <div class="container-fluid">
+            <span class="navbar-brand mb-0 h1">Spor İstanbul Bölge Şefi Denetim</span>
+        </div>
+    </nav>
+    <div class="container mt-5">
+        <div class="row g-4">
+            <div class="col-md-8">
+                <div class="d-grid gap-3">
+                    <a href="/" class="btn btn-outline-primary btn-lg" aria-label="Anasayfa">Anasayfa</a>
+                    <a href="/form" class="btn btn-success btn-lg" aria-label="Denetim Yap">Denetim Yap</a>
+                    <a href="/kategori" class="btn btn-warning btn-lg" aria-label="Kategori ve Soru Ekle">Kategori ve Soru Ekle</a>
+                    <a href="/tesis_karnesi" class="btn btn-info btn-lg" aria-label="Tesis Karnesi">Tesis Karnesi</a>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center shadow">
+                    <div class="card-header bg-secondary text-white">
+                        <h5 class="mb-0">Tüm Tesislerin Başarı Oranı</h5>
+                    </div>
+                    <div class="card-body">
+                        <h5 class="card-title display-6" id="basariOrani">Yükleniyor...</h5>
+                        <p class="card-text">Son denetimlere göre genel başarı yüzdesi.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Tüm tesislerin başarı oranını çek
+        fetch('/get_all_denetimler')
+            .then(res => res.json())
+            .then(data => {
+                const denetimler = data.denetimler || [];
+                const categories = data.categories || {};
+                let totalScore = 0, totalMax = 0;
+                denetimler.forEach(d => {
+                    Object.keys(categories).forEach(cat => {
+                        let score = 0, max_score = 0;
+                        (categories[cat] || []).forEach(q => {
+                            if (d[q] === "Evet") { score++; max_score++; }
+                            else if (d[q] === "Hayır") { max_score++; }
+                        });
+                        totalScore += score;
+                        totalMax += max_score;
+                    });
+                });
+                let oran = totalMax > 0 ? (totalScore / totalMax * 100).toFixed(2) : "0";
+                document.getElementById('basariOrani').innerText = oran + "%";
+            });
+    </script>
+</body>
+</html>

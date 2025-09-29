@@ -1,10 +1,11 @@
-from flask import Flask, render_template, request, jsonify
+from flask import Flask, render_template, request, jsonify, send_file
 from data_utils import load_data, save_data
 from score_utils import calculate_score, get_failed_questions, get_category_scores, extract_answers
 from flask_sqlalchemy import SQLAlchemy
 from datetime import datetime
 import os
 import json
+import pandas as pd
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///denetimler.db'
@@ -152,6 +153,26 @@ def tesis_karnesi_data():
             "failed_questions": [],
             "form_data": {}
         })
+
+@app.route("/export_excel")
+def export_excel():
+    denetimler = Denetim.query.order_by(Denetim.created_at).all()
+    rows = []
+    for d in denetimler:
+        cevaplar = json.loads(d.cevaplar)
+        row = {
+            "tesis_adi": d.tesis_adi,
+            "tarih": d.tarih,
+            "denetim_yapan": d.denetim_yapan,
+            **cevaplar
+        }
+        rows.append(row)
+    if not rows:
+        return "Hiç denetim kaydı yok.", 404
+    df = pd.DataFrame(rows)
+    excel_path = os.path.join(app.root_path, "denetimler_export.xlsx")
+    df.to_excel(excel_path, index=False)
+    return send_file(excel_path, as_attachment=True)
 
 @app.route("/form")
 def form():

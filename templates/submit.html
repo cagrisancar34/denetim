@@ -59,7 +59,7 @@
                 </tbody>
             </table>
             <h5 class="mt-4 mb-2 text-secondary">Tüm Kategoriler ve Yanıtlar</h5>
-            <div>
+            <div id="allQuestionsSection">
                 {% for category in categories.keys() %}
                 {% set questions = categories[category] %}
                 <div class="mb-2">
@@ -92,7 +92,8 @@ document.getElementById('pdfExportBtn').addEventListener('click', function () {
     // 1. sayfa: özet, skorlar, puan kaybedilen sorular ve kategori bazlı skorlar
     const firstPageElement = document.createElement('div');
     firstPageElement.style.padding = '16px';
-    firstPageElement.innerHTML = document.getElementById('pdfContent').innerHTML;
+    // Sadece özet ve skorlar kısmını al
+    firstPageElement.innerHTML = document.getElementById('pdfContent').innerHTML.replace(document.getElementById('allQuestionsSection').outerHTML, '');
     document.body.appendChild(firstPageElement);
     html2canvas(firstPageElement).then(function(canvas) {
         const imgData = canvas.toDataURL('image/png');
@@ -104,23 +105,10 @@ document.getElementById('pdfExportBtn').addEventListener('click', function () {
         pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
         document.body.removeChild(firstPageElement);
         // Sonraki sayfalar: Tüm Kategorilerdeki sorular ve yanıtlar
-        const pdfData = JSON.parse(document.getElementById('pdf-data').textContent);
-        const categories = pdfData.categories;
-        const formData = pdfData.formData;
-        let allQuestionsHtml = `<h5 class='mt-4 mb-2 text-secondary'>Tüm Kategoriler ve Yanıtlar</h5><div>`;
-        Object.keys(categories).forEach(function(category) {
-            allQuestionsHtml += `<div class='mb-2'><strong class='text-dark'>${category}</strong><ul class='list-group mb-2'>`;
-            categories[category].forEach(function(question) {
-                var yanit = formData[question] ? formData[question] : '-';
-                allQuestionsHtml += `<li class='list-group-item'><strong>${question}</strong><br>Yanıt: ${yanit}</li>`;
-            });
-            allQuestionsHtml += `</ul></div>`;
-        });
-        allQuestionsHtml += `</div>`;
-        // Parçala ve sayfalara ekle
+        const allQuestionsSection = document.getElementById('allQuestionsSection');
         const tempDiv = document.createElement('div');
         tempDiv.style.padding = '16px';
-        tempDiv.innerHTML = allQuestionsHtml;
+        tempDiv.innerHTML = allQuestionsSection.outerHTML;
         document.body.appendChild(tempDiv);
         html2canvas(tempDiv).then(function(canvas2) {
             const imgData2 = canvas2.toDataURL('image/png');

@@ -157,22 +157,52 @@ def tesis_karnesi_data():
 @app.route("/export_excel")
 def export_excel():
     denetimler = Denetim.query.order_by(Denetim.created_at).all()
-    rows = []
-    for d in denetimler:
-        cevaplar = json.loads(d.cevaplar)
-        row = {
-            "tesis_adi": d.tesis_adi,
-            "tarih": d.tarih,
-            "denetim_yapan": d.denetim_yapan,
-            **cevaplar
-        }
-        rows.append(row)
-    if not rows:
+    from openpyxl import Workbook
+    from openpyxl.styles import Font
+    from openpyxl.utils import get_column_letter
+    import tempfile
+
+    if not denetimler:
         return "Hiç denetim kaydı yok.", 404
-    df = pd.DataFrame(rows)
-    excel_path = os.path.join(app.root_path, "denetimler_export.xlsx")
-    df.to_excel(excel_path, index=False)
-    return send_file(excel_path, as_attachment=True)
+
+    # Son denetimi al
+    d = denetimler[-1]
+    cevaplar = json.loads(d.cevaplar)
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Denetim"
+    # 1. satır: Tesis Adı
+    ws["A1"] = "Tesis Adı"
+    ws["B1"] = cevaplar.get("tesis_adi", d.tesis_adi)
+    # 2. satır: Denetim Tarihi
+    ws["A2"] = "Denetim Tarihi"
+    ws["B2"] = cevaplar.get("denetim_tarihi", d.tarih)
+    # 3. satır: Denetim Yapan
+    ws["A3"] = "Denetim Yapan"
+    ws["B3"] = cevaplar.get("denetim_yapan", d.denetim_yapan)
+    # 5. satır: başlıklar
+    ws["A5"] = "Soru"
+    ws["B5"] = "Yanıt"
+    ws["C5"] = "Açıklama"
+    ws["D5"] = "Kategori"
+    bold_font = Font(bold=True)
+    for col in range(1, 5):
+        ws[f"{get_column_letter(col)}5"].font = bold_font
+    row_idx = 6
+    for category, questions in categories.items():
+        for question in questions:
+            yanit = cevaplar.get(question, "-")
+            aciklama = cevaplar.get(f"aciklama_{question}", "-")
+            ws[f"A{row_idx}"] = question
+            ws[f"B{row_idx}"] = yanit
+            ws[f"C{row_idx}"] = aciklama
+            ws[f"D{row_idx}"] = category
+            row_idx += 1
+    # Dosyayı geçici olarak kaydet
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp:
+        wb.save(tmp.name)
+        tmp.seek(0)
+        return send_file(tmp.name, as_attachment=True, download_name="denetim_sonuclari.xlsx")
 
 @app.route("/form")
 def form():

@@ -77,56 +77,13 @@
             </div>
         </div>
         <a href="/" class="btn btn-primary mt-3">Ana Sayfaya Dön</a>
-        <button id="pdfExportBtn" class="btn btn-outline-secondary mt-3 ms-2">PDF'e Aktar</button>
+        <button id="excelExportBtn" class="btn btn-outline-success mt-3 ms-2">Excel Çıktısı Al</button>
     </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script id="pdf-data" type="application/json">
-{"categories": {{ categories|tojson|safe }}, "formData": {{ form_data|tojson|safe }} }
-</script>
 <script>
-document.getElementById('pdfExportBtn').addEventListener('click', function () {
-    const pdf = new window.jspdf.jsPDF('p', 'mm', 'a4');
-    // 1. sayfa: özet, skorlar, puan kaybedilen sorular ve kategori bazlı skorlar
-    const firstPageElement = document.createElement('div');
-    firstPageElement.style.padding = '16px';
-    // Sadece özet ve skorlar kısmını al
-    firstPageElement.innerHTML = document.getElementById('pdfContent').innerHTML.replace(document.getElementById('allQuestionsSection').outerHTML, '');
-    document.body.appendChild(firstPageElement);
-    html2canvas(firstPageElement).then(function(canvas) {
-        const imgData = canvas.toDataURL('image/png');
-        const pageWidth = pdf.internal.pageSize.getWidth();
-        const pageHeight = pdf.internal.pageSize.getHeight();
-        const imgProps = pdf.getImageProperties(imgData);
-        const pdfWidth = pageWidth;
-        const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-        document.body.removeChild(firstPageElement);
-        // Sonraki sayfalar: Tüm Kategorilerdeki sorular ve yanıtlar
-        const allQuestionsSection = document.getElementById('allQuestionsSection');
-        const tempDiv = document.createElement('div');
-        tempDiv.style.padding = '16px';
-        tempDiv.innerHTML = allQuestionsSection.outerHTML;
-        document.body.appendChild(tempDiv);
-        html2canvas(tempDiv).then(function(canvas2) {
-            const imgData2 = canvas2.toDataURL('image/png');
-            const imgProps2 = pdf.getImageProperties(imgData2);
-            const pdfWidth2 = pageWidth;
-            const pdfHeight2 = (imgProps2.height * pdfWidth2) / imgProps2.width;
-            let remainingHeight = pdfHeight2;
-            let offset = 0;
-            while (remainingHeight > 0) {
-                pdf.addPage();
-                pdf.addImage(imgData2, 'PNG', 0, 0, pdfWidth2, Math.min(pageHeight, remainingHeight));
-                remainingHeight -= pageHeight;
-                offset += pageHeight;
-            }
-            document.body.removeChild(tempDiv);
-            pdf.save('denetim_sonuclari.pdf');
-        });
-    });
+document.getElementById('excelExportBtn').addEventListener('click', function () {
+    window.location.href = '/export_excel';
 });
 </script>
 </body>

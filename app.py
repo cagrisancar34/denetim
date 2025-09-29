@@ -204,9 +204,8 @@ def export_excel():
         tmp.seek(0)
         return send_file(tmp.name, as_attachment=True, download_name="denetim_sonuclari.xlsx")
 
-@app.route("/export_excel_page")
+@app.route("/export_excel_page", methods=["GET"])
 def export_excel_page():
-    # Tüm tesis adlarını ve denetimleri çek
     denetimler = Denetim.query.order_by(Denetim.created_at).all()
     tesisler = list({d.tesis_adi for d in denetimler if d.tesis_adi})
     return render_template("export_excel.html", tesisler=tesisler)

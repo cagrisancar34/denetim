@@ -1,0 +1,30 @@
+<!-- Tesis adına göre filtreleme ve excel çıktısı arayüzü (export_excel_page.html) -->
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Denetim Excel Çıktısı</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+<div class="container py-4">
+    <h2 class="mb-4 text-primary">Denetim Excel Çıktısı</h2>
+    <div class="card p-3 mb-3 shadow">
+        <form id="excelForm" method="get" action="/export_excel_filtered">
+            <label for="tesisSelect" class="form-label">Tesis Adı ile Filtrele:</label>
+            <select id="tesisSelect" name="tesis_adi" class="form-select mb-3">
+                <option value="">Tüm Tesisler</option>
+                {% for tesis in tesisler %}
+                <option value="{{ tesis }}">{{ tesis }}</option>
+                {% endfor %}
+            </select>
+            <button type="submit" class="btn btn-primary">Filtrele</button>
+            <button type="submit" class="btn btn-success ms-2" id="excelExportFilteredBtn">Excel Olarak İndir</button>
+        </form>
+    </div>
+    <a href="/" class="btn btn-outline-primary mt-3">Ana Sayfaya Dön</a>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

@@ -77,14 +77,14 @@
             </div>
         </div>
         <a href="/" class="btn btn-primary mt-3">Ana Sayfaya Dön</a>
-        <button id="excelExportBtn" class="btn btn-outline-success mt-3 ms-2">Excel Çıktısı Al</button>
+        <form method="get" action="/export_excel_filtered" style="display:inline;">
+            <input type="hidden" name="tesis_adi" value="{{ form_data.get('tesis_adi', '') }}">
+            <input type="hidden" name="denetim_tarihi" value="{{ form_data.get('denetim_tarihi', '') }}">
+            <input type="hidden" name="denetim_yapan" value="{{ form_data.get('denetim_yapan', '') }}">
+            <button type="submit" class="btn btn-outline-success mt-3 ms-2">Excel Çıktısı Al</button>
+        </form>
     </div>
 </div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-<script>
-document.getElementById('excelExportBtn').addEventListener('click', function () {
-    window.location.href = '/export_excel';
-});
-</script>
 </body>
 </html>

@@ -204,6 +204,60 @@ def export_excel():
         tmp.seek(0)
         return send_file(tmp.name, as_attachment=True, download_name="denetim_sonuclari.xlsx")
 
+@app.route("/export_excel_page")
+def export_excel_page():
+    # Tüm tesis adlarını ve denetimleri çek
+    denetimler = Denetim.query.order_by(Denetim.created_at).all()
+    tesisler = list({d.tesis_adi for d in denetimler if d.tesis_adi})
+    return render_template("export_excel.html", tesisler=tesisler)
+
+@app.route("/export_excel_filtered")
+def export_excel_filtered():
+    tesis_adi = request.args.get("tesis_adi", "")
+    denetim_tarihi = request.args.get("denetim_tarihi", "")
+    denetim_yapan = request.args.get("denetim_yapan", "")
+    denetimler = Denetim.query.order_by(Denetim.created_at).all()
+    # Sadece ilgili denetimi bul
+    filtered = [d for d in denetimler if d.tesis_adi == tesis_adi and d.tarih == denetim_tarihi and d.denetim_yapan == denetim_yapan]
+    from openpyxl import Workbook
+    from openpyxl.styles import Font
+    from openpyxl.utils import get_column_letter
+    import tempfile
+    if not filtered:
+        return "Seçilen denetime ait kayıt yok.", 404
+    d = filtered[0]
+    cevaplar = json.loads(d.cevaplar)
+    wb = Workbook()
+    ws = wb.active
+    ws.title = "Denetim"
+    ws["A1"] = "Tesis Adı"
+    ws["B1"] = d.tesis_adi
+    ws["A2"] = "Denetim Tarihi"
+    ws["B2"] = d.tarih
+    ws["A3"] = "Denetim Yapan"
+    ws["B3"] = d.denetim_yapan
+    ws["A5"] = "Soru"
+    ws["B5"] = "Yanıt"
+    ws["C5"] = "Açıklama"
+    ws["D5"] = "Kategori"
+    bold_font = Font(bold=True)
+    for col in range(1, 5):
+        ws[f"{get_column_letter(col)}5"].font = bold_font
+    row_idx = 6
+    for category, questions in categories.items():
+        for question in questions:
+            yanit = cevaplar.get(question, "-")
+            aciklama = cevaplar.get(f"aciklama_{question}", "-")
+            ws[f"A{row_idx}"] = question
+            ws[f"B{row_idx}"] = yanit
+            ws[f"C{row_idx}"] = aciklama
+            ws[f"D{row_idx}"] = category
+            row_idx += 1
+    with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp:
+        wb.save(tmp.name)
+        tmp.seek(0)
+        return send_file(tmp.name, as_attachment=True, download_name="denetim_sonuclari.xlsx")
+
 @app.route("/form")
 def form():
     return render_template("form.html", categories=categories)

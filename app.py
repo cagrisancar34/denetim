@@ -213,45 +213,53 @@ def export_excel_page():
 @app.route("/export_excel_filtered")
 def export_excel_filtered():
     tesis_adi = request.args.get("tesis_adi", "")
-    denetim_tarihi = request.args.get("denetim_tarihi", "")
-    denetim_yapan = request.args.get("denetim_yapan", "")
     denetimler = Denetim.query.order_by(Denetim.created_at).all()
-    # Sadece ilgili denetimi bul
-    filtered = [d for d in denetimler if d.tesis_adi == tesis_adi and d.tarih == denetim_tarihi and d.denetim_yapan == denetim_yapan]
+    # Tüm tesisler veya seçili tesise göre filtrele
+    filtered = [d for d in denetimler if (not tesis_adi or d.tesis_adi == tesis_adi)]
     from openpyxl import Workbook
     from openpyxl.styles import Font
     from openpyxl.utils import get_column_letter
     import tempfile
     if not filtered:
-        return "Seçilen denetime ait kayıt yok.", 404
-    d = filtered[0]
-    cevaplar = json.loads(d.cevaplar)
+        return "Seçilen tesise ait denetim kaydı yok.", 404
     wb = Workbook()
     ws = wb.active
     ws.title = "Denetim"
+    # 1. satır: Tesis Adı
     ws["A1"] = "Tesis Adı"
-    ws["B1"] = d.tesis_adi
+    ws["B1"] = tesis_adi if tesis_adi else "Tüm Tesisler"
+    # 2. satır: Denetim Tarihi
     ws["A2"] = "Denetim Tarihi"
-    ws["B2"] = d.tarih
+    ws["B2"] = "-"
+    # 3. satır: Denetim Yapan
     ws["A3"] = "Denetim Yapan"
-    ws["B3"] = d.denetim_yapan
+    ws["B3"] = "-"
+    # 5. satır: başlıklar
     ws["A5"] = "Soru"
     ws["B5"] = "Yanıt"
     ws["C5"] = "Açıklama"
     ws["D5"] = "Kategori"
+    ws["E5"] = "Denetim Tarihi"
+    ws["F5"] = "Denetim Yapan"
+    ws["G5"] = "Tesis Adı"
     bold_font = Font(bold=True)
-    for col in range(1, 5):
+    for col in range(1, 8):
         ws[f"{get_column_letter(col)}5"].font = bold_font
     row_idx = 6
-    for category, questions in categories.items():
-        for question in questions:
-            yanit = cevaplar.get(question, "-")
-            aciklama = cevaplar.get(f"aciklama_{question}", "-")
-            ws[f"A{row_idx}"] = question
-            ws[f"B{row_idx}"] = yanit
-            ws[f"C{row_idx}"] = aciklama
-            ws[f"D{row_idx}"] = category
-            row_idx += 1
+    for d in filtered:
+        cevaplar = json.loads(d.cevaplar)
+        for category, questions in categories.items():
+            for question in questions:
+                yanit = cevaplar.get(question, "-")
+                aciklama = cevaplar.get(f"aciklama_{question}", "-")
+                ws[f"A{row_idx}"] = question
+                ws[f"B{row_idx}"] = yanit
+                ws[f"C{row_idx}"] = aciklama
+                ws[f"D{row_idx}"] = category
+                ws[f"E{row_idx}"] = d.tarih
+                ws[f"F{row_idx}"] = d.denetim_yapan
+                ws[f"G{row_idx}"] = d.tesis_adi
+                row_idx += 1
     with tempfile.NamedTemporaryFile(delete=False, suffix=".xlsx") as tmp:
         wb.save(tmp.name)
         tmp.seek(0)

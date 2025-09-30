@@ -8,7 +8,12 @@ import json
 import pandas as pd
 
 app = Flask(__name__)
-app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///denetimler.db'
+# PostgreSQL bağlantısı için ortam değişkeni kullan
+POSTGRES_URL = os.environ.get('POSTGRES_URL')
+if (POSTGRES_URL):
+    app.config['SQLALCHEMY_DATABASE_URI'] = POSTGRES_URL
+else:
+    app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///denetimler.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 db = SQLAlchemy(app)
 

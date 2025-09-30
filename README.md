@@ -76,6 +76,37 @@ Bu proje, Spor İstanbul tesislerinde yapılan denetimlerin dijital olarak kayde
    ```
 6. Deploy edin ve çıkan URL üzerinden uygulamanızı canlı olarak kullanın.
 
+## Render'da PostgreSQL'e Geçiş
+
+### 1. Render'da PostgreSQL Veritabanı Oluşturma
+- Render dashboard'da "Databases" bölümünden yeni bir PostgreSQL veritabanı oluşturun.
+- Bağlantı bilgilerini (host, port, database, user, password) kopyalayın.
+
+### 2. Ortam Değişkeni Ekleme
+- Render Web Service ayarlarında "Environment" sekmesine girin.
+- Yeni bir ortam değişkeni ekleyin:
+  - Key: POSTGRES_URL
+  - Value: postgresql://<user>:<password>@<host>:<port>/<database>
+
+### 3. Kodda Değişiklik
+- `app.py` dosyasında veritabanı bağlantısı otomatik olarak ortam değişkeninden alınır.
+- Ortam değişkeni yoksa SQLite ile çalışır.
+
+### 4. Deploy
+- Tüm değişiklikleri GitHub'a push edin.
+- Render'da yeni deploy başlatın.
+
+### 5. Başlatma Komutu
+- Render'da "Start Command" olarak şunu kullanın:
+  ```
+  gunicorn app:app
+  ```
+
+### Notlar
+- Tüm veriler artık kalıcı olarak PostgreSQL'de saklanır.
+- SQLite dosyası Render'da geçici olduğu için veri kaybı yaşanmaz.
+- Ortam değişkeni ile bağlantı bilgileri güvenli şekilde yönetilir.
+
 ## Ortam Değişkenleri
 Gerekirse gizli anahtarlarınızı Render panelinden ekleyebilirsiniz.
 
